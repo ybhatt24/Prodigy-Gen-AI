@@ -1,0 +1,77 @@
+from collections import defaultdict
+
+def build_model(text, state_size=2):
+  """
+  Builds a Markov chain model from the provided text.
+
+  Args:
+    text: The text to train the model on.
+    state_size: The number of previous words to consider for prediction.
+
+  Returns:
+    A dictionary representing the Markov chain model.
+  """
+  model = defaultdict(lambda: defaultdict(int))
+  words = text.split()
+
+  # Loop through the text, considering state_size words at a time
+  for i in range(len(words) - state_size):
+    state = tuple(words[i:i+state_size])
+    next_word = words[i+state_size]
+    model[state][next_word] += 1
+
+  # Normalize counts for each state
+  for state, next_words in model.items():
+    total_count = sum(next_words.values())
+    for word, count in next_words.items():
+      next_words[word] = count / total_count
+
+  return model
+
+def generate_text(model, start_words, length=100):
+  """
+  Generates text using the provided Markov chain model.
+
+  Args:
+    model: The Markov chain model.
+    start_words: A list of words to start the generation.
+    length: The desired length of the generated text (in words).
+
+  Returns:
+    A string containing the generated text.
+  """
+  text = " ".join(start_words)
+  for _ in range(length):
+    state = tuple(text.split()[-len(start_words):])
+    next_word_probs = model[state]
+    next_word = weighted_random_choice(next_word_probs)
+    text += " " + next_word
+  return text
+
+def weighted_random_choice(prob_dict):
+  """
+  Chooses a random element from a dictionary based on its weight (value).
+
+  Args:
+    prob_dict: A dictionary where keys are elements and values are their probabilities.
+
+  Returns:
+    A randomly chosen element from the dictionary.
+  """
+  import random
+  total = sum(prob_dict.values())
+  rand_val = random.uniform(0, total)
+  upto = 0
+  for key, value in prob_dict.items():
+    upto += value
+    if upto >= rand_val:
+      return key
+
+# Example usage
+text = "The cat sat on the mat. It was a green mat. The cat liked the mat."
+model = build_model(text)
+
+start_words = ["The", "cat"]
+generated_text = generate_text(model, start_words, length=20)
+
+print(generated_text)
